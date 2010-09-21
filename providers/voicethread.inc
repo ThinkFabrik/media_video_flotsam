@@ -40,6 +40,7 @@ function emvideo_voicethread_info() {
  */
 
 function emvideo_voicethread_settings() {
+  $form = array();
   return $form;
 }
 
