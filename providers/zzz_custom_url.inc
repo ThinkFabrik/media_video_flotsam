@@ -146,6 +146,10 @@ function theme_emvideo_zzz_custom_url_embedded_video($type, $url, $width, $heigh
   }
   else if ($url = url($url, array('external' => TRUE, 'absolute' => TRUE))) {
     global $base_path;
+    // Validate url
+    if (!valid_url($url, TRUE) && !valid_url($url)) {
+      return '';
+    }
 	
     if (module_exists('flowplayer')) {
       $config = array(
