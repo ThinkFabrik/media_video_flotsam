@@ -83,7 +83,7 @@ function emvideo_livestream_settings() {
   $form['livestream']['player_options']['emvideo_livestream_autoplay'] = array(
     '#type' => 'checkbox',
     '#title' => t('Auto play'),
-    '#default_value' => variable_get('emvideo_livestream_autoplay', 1),
+    '#default_value' => variable_get('emvideo_livestream_autoplay', 0),
     '#description' => t('Automatically play the video when users visit its page.'),
   );
   return $form;
@@ -95,54 +95,54 @@ function emvideo_livestream_settings() {
  * provides an array to be serialised and made available with $item elsewhere
  */
 function emvideo_livestream_data($field, $item) {
-	
+
   $data = array();
-  
+
   // create some 'field' version control
   $data['emvideo_livestream_version'] = 1;
-  
- // Thumbnail creation 
-  
+
+  // Thumbnail creation
+
   // The links from the RSS 2.0 API contain ondemand in the video string
   // So we need to handle that seperatly
-  
-  if (strpos(strtolower($item['value']),'ondemand') !== false ) {
 
-  	// Explodes mychannel/../videoID into parts
-    $channelname = explode('/', $item['value']);
-  	
+  // Explodes mychannel?..&amp;clip=videoID into parts
+  $boom = explode('?', $item['value']);
+  $channel = $boom[0];
+  if (strpos(strtolower($item['value']),'clip') !== false ) {
+    preg_match('/clip=([^&]+)/', $item['value'], $matches);
+
     // Example API 2.0 call : http://xMYCHANNELNAMEx.channel-api.livestream-api.com/2.0/thumbnail?id=VIDEOID
-    $api_url = 'http://x' . $channelname[0] . 'x.channel-api.livestream-api.com/2.0/thumbnail?id='. $channelname[2];
+    $api_url = 'http://x' . $channel .  'x.channel-api.livestream-api.com/2.0/thumbnail?id='. $matches[1];
 
-         
-  } else {
-  }; 
+    // Get the thumbnail via an API 2.0 call
+    $result = drupal_http_request($api_url);
 
-  // Get the thumbnail via an API 2.0 call
- 
-  $result = drupal_http_request($api_url); 
-        
-  if ($result->code == 200) {
-    $parser = drupal_xml_parser_create($result->data);
-    $vals = array();
-    $index = array();
-    xml_parse_into_struct($parser, $result->data, $vals);
-    xml_parser_free($parser);
-    if (count($vals)) {
-      foreach ($vals as $val) {
-        if ($val['tag'] == 'MEDIA:THUMBNAIL') {
-          $data['thumbnail']['url'] = $val['attributes']['URL'];
-          break;
+    if ($result->code == 200) {
+      $parser = drupal_xml_parser_create($result->data);
+      $vals = array();
+      $index = array();
+      xml_parse_into_struct($parser, $result->data, $vals);
+      xml_parser_free($parser);
+      if (count($vals)) {
+        foreach ($vals as $val) {
+          if ($val['tag'] == 'MEDIA:THUMBNAIL') {
+            $data['thumbnail']['url'] = $val['attributes']['URL'];
+            break;
+          }
         }
       }
     }
-  }	
-  
+  } else {
+    // live URL (thumbnail will change while stream progresses)
+    $data['thumbnail']['url'] = 'http://thumbnail.api.livestream.com/thumbnail?name=' . $channel;
+  }
+
   // gather info about the item
   // RSS / MRSS feeds with the item would have enough info
   // alternative try getting the minimum from an http get
   $url = 'http://www.livestream.com/'. $item['value'];
-  $response = emfield_request_header('livestream', $url);  
+  $response = emfield_request_header('livestream', $url);
 
   if ($response->code == 200) {
     // probably shouldn't give the 303 path
@@ -199,12 +199,20 @@ function emvideo_livestream_request($method, $args = array(), $cached = TRUE) {
  *   otherwise, the calling function will handle testing the embed code against each regex string in the returned array.
  */
 function emvideo_livestream_extract($embed = '') {
-  // http://channel.api.livestream.com/1.0/embed?channel=proshowcase
-  // http://www.livestream.com/proshowcase
-  return array(
-    '@livestream\.com/1.0/embed\?channel=([^"\&]+)@i',
-    '@www\.livestream\.com/([^"\&]+)@i',
-  );
+  // http://channel.api.livestream.com/1.0/embed?channel=whatstrending
+  // http://www.livestream.com/whatstrending
+  // http://www.livestream.com/whatstrending/video?clipId=flv_083673e4-c87b-4af1-9553-c5057495d111&time=0
+  // <iframe width="560" height="340" src="http://cdn.livestream.com/embed/whatstrending?layout=4&amp;clip=flv_083673e4-c87b-4af1-9553-c5057495d111&amp;autoplay=false" style="border:0;outline:0" frameborder="0" scrolling="no"></iframe><div style="font-size: 11px;padding-top:10px;text-align:center;width:560px">Watch <a href="http://www.livestream.com/?utm_source=lsplayer&amp;utm_medium=embed&amp;utm_campaign=footerlinks" title="live streaming video">live streaming video</a> from <a href="http://www.livestream.com/whatstrending?utm_source=lsplayer&amp;utm_medium=embed&amp;utm_campaign=footerlinks" title="Watch whatstrending at livestream.com">whatstrending</a> at livestream.com</div>
+  // <iframe width="560" height="340" src="http://cdn.livestream.com/embed/whatstrending?layout=4&amp;autoplay=false" style="border:0;outline:0" frameborder="0" scrolling="no"></iframe><div style="font-size: 11px;padding-top:10px;text-align:center;width:560px">Watch <a href="http://www.livestream.com/?utm_source=lsplayer&amp;utm_medium=embed&amp;utm_campaign=footerlinks" title="live streaming video">live streaming video</a> from <a href="http://www.livestream.com/whatstrending?utm_source=lsplayer&amp;utm_medium=embed&amp;utm_campaign=footerlinks" title="Watch whatstrending at livestream.com">whatstrending</a> at livestream.com</div>
+  if (preg_match('@livestream\.com/1.0/embed\?channel=([^"\& ]+)@i', $embed, $matches)) {
+    return $matches[1];
+  }
+  if (preg_match('@livestream\.com/(embed/)?([^/\? ]+).*?((clipId|clip)=([^\&\'" ]+))@i', $embed, $matches)) {
+    return $matches[2] .'?clip='. $matches[5];
+  }
+  else if (preg_match('@livestream\.com/(embed/)?([^/\? ]+)@i', $embed, $matches)) {
+    return $matches[2];
+  }
 }
 
 
@@ -223,51 +231,49 @@ function emvideo_livestream_embedded_link($video_code) {
 /**
  * The embedded flash displaying the livestream video.
  */
-function theme_emvideo_livestream_flash($embed, $width, $height, $autoplay=TRUE, $options = array()) {
+function theme_emvideo_livestream_flash($embed, $width, $height, $autoplay, $options = array()) {
   static $count;
   $output = '';
   if ($embed) {
-  	
+
     $fullscreen = isset($options['fullscreen']) ? $options['fullscreen'] : variable_get('emvideo_livestream_full_screen', 1);
     $fullscreen_value = $fullscreen ? "true" : "false";
 
-    // This is a little funky. Essentially it ignores whatever is passed in to $autoplay and retrieves the setting or
-    // takes a value from the options array. Also, don't I need to convert the & into &amp;?
-    $autoplay = isset($options['autoplay']) ? $options['autoplay'] : variable_get('emvideo_livestream_autoplay', 1);
+    $autoplay = isset($autoplay) ? $autoplay : (isset($options['autoplay']) ? $options['autoplay'] : variable_get('emvideo_livestream_autoplay', 0));
     $autoplay_value = $autoplay ? 'true' : 'false';
 
     // Micah's ugly hack.
     $embed = str_replace('?', '&amp;', $embed);
-    $embed = str_replace('clipId', 'clip', $embed);   
-    
+    $embed = str_replace('clipId', 'clip', $embed);
+
     // Livestream URLs from the rss api contain /ondemand/ instead of ?clip=
     // So we fix it
     $embed = str_replace('/ondemand/', '&amp;clip=', $embed);
-        
+
 //    $id = isset($options['id']) ? $options['id'] : 'emvideo-livestream-flash-'. (++$count);
     $div_id = isset($options['div_id']) ? $options['div_id'] : 'emvideo-livestream-flash-wrapper-'. $count;
 
     $output .= <<<FLASH
       <div id="$div_id">
-      
+
       <object width="$width" height="$height" id="lsplayer" classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000">
         <param name="movie" value="http://cdn.livestream.com/grid/LSPlayer.swf?channel=$embed&amp;autoPlay=$autoplay_value"></param>
         <param name="allowScriptAccess" value="always"></param>
         <param name="allowFullScreen" value="$fullscreen_value"></param>
-        <embed name="lsplayer" 
+        <embed name="lsplayer"
           wmode="transparent"
-          src="http://cdn.livestream.com/grid/LSPlayer.swf?channel=$embed&amp;autoPlay=$autoplay_value" 
+          src="http://cdn.livestream.com/grid/LSPlayer.swf?channel=$embed&amp;autoPlay=$autoplay_value"
           width="$width"
           height="$height"
           allowScriptAccess="always"
           allowFullScreen="$fullscreen_value"
           type="application/x-shockwave-flash">
         </embed>
-        
+
       </object>
       </div>
 FLASH;
-    
+
   }
   return $output;
 }
@@ -284,7 +290,7 @@ FLASH;
  *    a URL pointing to the thumbnail
  */
 function emvideo_livestream_thumbnail($field, $item, $formatter, $node, $width, $height) {
-	
+
   global $base_url;
   global $base_path;
   global $theme;
@@ -295,11 +301,11 @@ function emvideo_livestream_thumbnail($field, $item, $formatter, $node, $width, 
   {
     return $base_url . $base_path . drupal_get_path('theme', $theme) . '/no-pre.png';
   }
-  	
+
   // Always return the larger image, since we're storing images locally.
   // $tn = larger image
   // return $tn;
-  
+
 }
 
 /**
@@ -318,8 +324,8 @@ function emvideo_livestream_thumbnail($field, $item, $formatter, $node, $width, 
  *  @return
  *    the html of the embedded video
  */
-function emvideo_livestream_video($embed, $width, $height, $field, $item, &$node, $autoplay) {
-  $output = theme('emvideo_livestream_flash', $embed, $width, $height, $autoplay);
+function emvideo_livestream_video($embed, $width, $height, $field, $item, $node, $autoplay, $options = array()) {
+  $output = theme('emvideo_livestream_flash', $embed, $width, $height, $autoplay, $options);
   return $output;
 }
 
@@ -339,8 +345,8 @@ function emvideo_livestream_video($embed, $width, $height, $field, $item, &$node
  *  @return
  *    the html of the embedded video
  */
-function emvideo_livestream_preview($embed, $width, $height, $field, $item, &$node, $autoplay) {
-  $output = theme('emvideo_livestream_flash', $embed, $width, $height, $autoplay);
+function emvideo_livestream_preview($embed, $width, $height, $field, $item, $node, $autoplay, $options = array()) {
+  $output = theme('emvideo_livestream_flash', $embed, $width, $height, $autoplay, $options);
   return $output;
 }
 
@@ -348,10 +354,10 @@ function emvideo_livestream_preview($embed, $width, $height, $field, $item, &$no
  * Implementation of hook_emfield_subtheme.
  */
 function emvideo_livestream_emfield_subtheme() {
-    return array(
-        'emvideo_livestream_flash'  => array(
-            'arguments' => array('embed' => NULL, 'width' => NULL, 'height' => NULL, 'autoplay' => NULL),
-            'file' => 'providers/livestream.inc'
-        )
-    );
+  return array(
+    'emvideo_livestream_flash'  => array(
+      'arguments' => array('embed' => NULL, 'width' => NULL, 'height' => NULL, 'autoplay' => NULL),
+      'file' => 'providers/livestream.inc'
+    )
+  );
 }
