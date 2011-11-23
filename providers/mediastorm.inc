@@ -4,6 +4,7 @@
  */
 
 define('MEDIA_MEDIASTORM_URL', 'http://mediastorm.com');
+
 /**
  * Implementation of emvideo_PROVIDER_info()
  */
@@ -19,7 +20,7 @@ define('MEDIA_MEDIASTORM_URL', 'http://mediastorm.com');
   );
   
   return array(
-    'provider' => t('mediastorm'),
+    'provider' => 'mediastorm',
     'name' => t('MediaStorm'),
     'url'  => MEDIA_MEDIASTORM_URL,
     'settings_description' => t('These settings specifically affect videos displayed from !provider.', 
@@ -31,4 +32,18 @@ define('MEDIA_MEDIASTORM_URL', 'http://mediastorm.com');
 function emvideo_mediastorm_settings() {
   $form = array();
   return $form;
+}
+
+/**
+ * Implementation of emvideo_PROVIDER_extract
+ */
+function emvideo_mediastorm_extract($embed = '') {
+/*
+http://mediastorm.com/publication/african-air
+<script type="text/javascript" src="http://mediastorm.com/player/embed.php?id=e4eccf159b95f9588110&w=460&h=373&amp;lang=none"></script>
+*/
+
+  return array(
+    '@mediastorm.com/player/embed.php\?id=([0-9a-zA-Z]+)@i'
+  );
 }
