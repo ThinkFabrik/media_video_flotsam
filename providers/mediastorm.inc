@@ -4,6 +4,7 @@
  */
 
 define('MEDIA_MEDIASTORM_URL', 'http://mediastorm.com');
+define('MEDIA_MEDIASTORM_PLAYER_URL', 'http://mediastorm.com/sites/default/player/wrapper.php?id=');
 
 /**
  * Implementation of emvideo_PROVIDER_info()
@@ -45,5 +46,42 @@ http://mediastorm.com/publication/african-air
 
   return array(
     '@mediastorm.com/player/embed.php\?id=([0-9a-zA-Z]+)@i'
+  );
+}
+
+/**
+ * Returns the embedded flash object
+ */
+function theme_emvideo_mediastorm_flash($embed, $width, $height, $autoplay) {
+  $output = '';
+
+  if ($embed) {
+    $url = MEDIA_MEDIASTORM_PLAYER_URL . $embed;
+    $output .= <<<EOD
+    <object width=$width height=$height>
+      <param name="movie" value="$url"></param>
+      <param name="allowFullScreen" value="true"></param>
+      <param name="allowscriptaccess" value="always"></param>
+      <embed src="$url" type="application/x-shockwave-flash" allowscriptaccess="always" allowfullscreen="true" width=$width height=$height></embed>
+    </object>
+EOD;
+  }
+
+  return $output;
+}
+
+function emvideo_mediastorm_video($embed, $width, $height, $field, $item, $node, $autoplay) {
+  return theme('emvideo_mediastorm_flash', $embed, $width, $height, $autoplay);
+}
+
+/**
+ * Implementation of hook_emfield_subtheme()
+ */
+function emvideo_mediastorm_emfield_subtheme() {
+  return array(
+    'emvideo_mediastorm_flash' => array(
+      'arguments' => array('embed' => NULL, 'width' => NULL, 'height' => NULL, 'autoplay' => NULL),
+      'file' => 'providers/mediastorm.inc'
+    )
   );
 }
