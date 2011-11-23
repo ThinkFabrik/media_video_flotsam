@@ -5,7 +5,7 @@
 
 define('MEDIA_MEDIASTORM_URL', 'http://mediastorm.com');
 /**
- * Implementation of hook_PROVIDER_info()
+ * Implementation of emvideo_PROVIDER_info()
  */
  function emvideo_mediastorm_info() {
   $features = array(
@@ -26,4 +26,9 @@ define('MEDIA_MEDIASTORM_URL', 'http://mediastorm.com');
       array('!provider' => l(t('mediastorm.com'), MEDIA_MEDIASTORM_URL))),
     'supported_features' => $features,
   );
+}
+
+function emvideo_mediastorm_settings() {
+  $form = array();
+  return $form;
 }
