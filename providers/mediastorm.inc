@@ -50,6 +50,14 @@ http://mediastorm.com/publication/african-air
 }
 
 /**
+ * Return a link to MediaStorm
+ * Cannot return link to the video because of the custom nature of the embeds
+ */
+function emvideo_mediastorm_embedded_link() {
+  return MEDIA_MEDIASTORM_URL;   
+}
+
+/**
  * Returns the embedded flash object
  */
 function theme_emvideo_mediastorm_flash($embed, $width, $height, $autoplay) {
