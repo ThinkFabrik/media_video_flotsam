@@ -14,11 +14,8 @@ define('MEDIA_MEDIASTORM_IFRAME_URL', 'http://player.mediastorm.com/players/code
   $features = array(
     array(t('Autoplay'), t('No'), ''),
     array(t('RSS Attachment'), t('No'), ''),
-    array(t('Thumbnails'), t('No'), t('')),
-    array(
-      t('Full screen mode'),
-      t('Yes'),
-      t('You may customize the player to enable or disable full screen playback. Full screen mode is enabled by default.')),
+    array(t('Thumbnails'), t('No'), ''),
+    array(t('Full screen mode'), t('Yes'), t('Always available')),
   );
 
   return array(
@@ -33,6 +30,22 @@ define('MEDIA_MEDIASTORM_IFRAME_URL', 'http://player.mediastorm.com/players/code
 
 function emvideo_mediastorm_settings() {
   $form = array();
+
+  $form['mediastorm']['player_options'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Embedded video player options'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+
+  $form['mediastorm']['player_options']['emvideo_mediastorm_mode'] = array(
+    '#type' => 'radios',
+    '#title' => t('Player mode'),
+    '#default_value' => variable_get('emvideo_mediastorm_mode', 'iframe'),
+    '#options' => array('iframe' => t('MediaStorm iframe'), 'flash' => 'Direct flash player'),
+    '#description' => t('Player output - MediaStorm iframe or direct flash player'),
+  );
+
   return $form;
 }
 
@@ -70,7 +83,7 @@ function theme_emvideo_mediastorm_video($embed, $width, $height, $mode = 'iframe
   }
   else {
     $player = MEDIA_MEDIASTORM_PLAYER_URL;
-    $flashvars = "data=http://player.mediastorm.com/players/&amp;referrer=&amp;id=$embed&amp;lang=eng";
+    $flashvars = "data=http://player.mediastorm.com/players/&amp;id=$embed&amp;referrer=&amp;lang=eng";
 
     $video_embed = <<<EOD
 <embed src="$player" type="application/x-shockwave-flash" allowscriptaccess="always" allowfullscreen="true" width=$width height=$height flashvars="$flashvars" wmode="transparent"></embed>
@@ -81,7 +94,7 @@ EOD;
 }
 
 function emvideo_mediastorm_video($embed, $width, $height, $field, $item, $node, $autoplay) {
-  return theme('emvideo_mediastorm_video', $embed, $width, $height, 'iframe');
+  return theme('emvideo_mediastorm_video', $embed, $width, $height, variable_get('emvideo_mediastorm_mode', 'iframe'));
 }
 
 /**
