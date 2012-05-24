@@ -46,6 +46,8 @@ http://mediastorm.com/publication/african-air
 
   return array(
     '@mediastorm.com/player/embed.php\?id=([0-9a-zA-Z]+)@i'
+    '@mediastorm.com/player/embed.php\?id=([0-9a-zA-Z]+)@i',
+    '@mediastorm.com/players/embed\?id=([0-9a-zA-Z]+)@i'
   );
 }
 
