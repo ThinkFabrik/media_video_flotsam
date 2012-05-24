@@ -57,26 +57,31 @@ function emvideo_mediastorm_embedded_link() {
 /**
  * Returns the embedded flash object
  */
-function theme_emvideo_mediastorm_flash($embed, $width, $height, $autoplay) {
-  $output = '';
+function theme_emvideo_mediastorm_video($embed, $width, $height, $mode = 'iframe') {
 
-  if ($embed) {
-    $url = MEDIA_MEDIASTORM_PLAYER_URL . $embed;
-    $output .= <<<EOD
-    <object width=$width height=$height>
-      <param name="movie" value="$url"></param>
-      <param name="allowFullScreen" value="true"></param>
-      <param name="allowscriptaccess" value="always"></param>
-      <embed src="$url" type="application/x-shockwave-flash" allowscriptaccess="always" allowfullscreen="true" width=$width height=$height></embed>
-    </object>
+  if (!$embed) {
+    return;
+  }
+
+  if ($mode == 'iframe') {
+    $src = MEDIA_MEDIASTORM_IFRAME_URL . "?id=$embed&w=$width&h=$height&lang=eng";
+    $video_embed = "<iframe src=\"$src\" width=\"{$width}\" height=\"{$height}\" id=\"mediastorm-player-{$embed}\" allowtransparency=\"true\" frameborder=\"0\" scrolling=\"0\"></iframe>";
+
+  }
+  else {
+    $player = MEDIA_MEDIASTORM_PLAYER_URL;
+    $flashvars = "data=http://player.mediastorm.com/players/&amp;referrer=&amp;id=$embed&amp;lang=eng";
+
+    $video_embed = <<<EOD
+<embed src="$player" type="application/x-shockwave-flash" allowscriptaccess="always" allowfullscreen="true" width=$width height=$height flashvars="$flashvars" wmode="transparent"></embed>
 EOD;
   }
 
-  return $output;
+  return $video_embed;
 }
 
 function emvideo_mediastorm_video($embed, $width, $height, $field, $item, $node, $autoplay) {
-  return theme('emvideo_mediastorm_flash', $embed, $width, $height, $autoplay);
+  return theme('emvideo_mediastorm_video', $embed, $width, $height, 'iframe');
 }
 
 /**
@@ -84,9 +89,9 @@ function emvideo_mediastorm_video($embed, $width, $height, $field, $item, $node,
  */
 function emvideo_mediastorm_emfield_subtheme() {
   return array(
-    'emvideo_mediastorm_flash' => array(
-      'arguments' => array('embed' => NULL, 'width' => NULL, 'height' => NULL, 'autoplay' => NULL),
+    'emvideo_mediastorm_video' => array(
+      'arguments' => array('embed' => NULL, 'width' => NULL, 'height' => NULL, 'mode' => NULL),
       'file' => 'providers/mediastorm.inc'
-    )
+    ),
   );
 }
