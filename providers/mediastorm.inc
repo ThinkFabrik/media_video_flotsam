@@ -4,7 +4,8 @@
  */
 
 define('MEDIA_MEDIASTORM_URL', 'http://mediastorm.com');
-define('MEDIA_MEDIASTORM_PLAYER_URL', 'http://mediastorm.com/sites/default/player/wrapper.php?id=');
+define('MEDIA_MEDIASTORM_PLAYER_URL', 'http://player.mediastorm.com/pub/player/flash/swf/WrapperMSPlayer.swf');
+define('MEDIA_MEDIASTORM_IFRAME_URL', 'http://player.mediastorm.com/players/codewriter/flash');
 
 /**
  * Implementation of emvideo_PROVIDER_info()
@@ -19,12 +20,12 @@ define('MEDIA_MEDIASTORM_PLAYER_URL', 'http://mediastorm.com/sites/default/playe
       t('Yes'),
       t('You may customize the player to enable or disable full screen playback. Full screen mode is enabled by default.')),
   );
-  
+
   return array(
     'provider' => 'mediastorm',
     'name' => t('MediaStorm'),
     'url'  => MEDIA_MEDIASTORM_URL,
-    'settings_description' => t('These settings specifically affect videos displayed from !provider.', 
+    'settings_description' => t('These settings specifically affect videos displayed from !provider.',
       array('!provider' => l(t('mediastorm.com'), MEDIA_MEDIASTORM_URL))),
     'supported_features' => $features,
   );
@@ -39,13 +40,7 @@ function emvideo_mediastorm_settings() {
  * Implementation of emvideo_PROVIDER_extract
  */
 function emvideo_mediastorm_extract($embed = '') {
-/*
-http://mediastorm.com/publication/african-air
-<script type="text/javascript" src="http://mediastorm.com/player/embed.php?id=e4eccf159b95f9588110&w=460&h=373&amp;lang=none"></script>
-*/
-
   return array(
-    '@mediastorm.com/player/embed.php\?id=([0-9a-zA-Z]+)@i'
     '@mediastorm.com/player/embed.php\?id=([0-9a-zA-Z]+)@i',
     '@mediastorm.com/players/embed\?id=([0-9a-zA-Z]+)@i'
   );
@@ -56,7 +51,7 @@ http://mediastorm.com/publication/african-air
  * Cannot return link to the video because of the custom nature of the embeds
  */
 function emvideo_mediastorm_embedded_link() {
-  return MEDIA_MEDIASTORM_URL;   
+  return MEDIA_MEDIASTORM_URL;
 }
 
 /**
